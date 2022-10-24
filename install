@@ -11,7 +11,55 @@ help() {
 }
 
 install() {
-  curl -L https://fly.io/install.sh | sh -s ${VERSION#v}
+  # get system os/arch/bin_path
+  local arch="$(os::arch)"
+  local os="Linux"
+  local bin_path=/usr/bin
+
+  if [ "$(os::is_macos)" = "true" ]; then
+    os="macOS"
+    bin_path=/usr/local/bin
+  fi
+
+  if [ "$arch" = "amd64" ]; then
+    arch="x86_64"
+  elif [ "$arch" = "arm64" ]; then
+    arch="arm64"
+  else
+    log::error "unknown architecture: $arch"
+    exit 1
+  fi
+
+  # prepare vars
+  local name="flyctl"
+  local tmp_dir="/tmp/$name"
+  local tmp_file="/tmp/$name.tar.gz"
+  local tar_gz_bin="./$name"
+  local user_bin="$bin_path/$name"
+
+  # prepare context
+  mkdir -p $tmp_dir
+  cd $tmp_dir
+
+  # reference: https://github.com/superfly/flyctl/releases
+  # example:
+  #   https://github.com/superfly/flyctl/releases/download/v0.0.417/flyctl_0.0.417_macOS_arm64.tar.gz
+  #   https://github.com/superfly/flyctl/releases/download/v0.0.417/flyctl_0.0.417_macOS_x86_64.tar.gz
+  # generate url
+  local url="https://github.com/superfly/flyctl/releases/download/$VERSION/${name}_${VERSION#v}_${os}_${arch}.tar.gz"
+  log::debug "[package][$name] url: $url"
+
+  # download
+  os::curl --progress-bar -fSL $url -o $tmp_file
+
+  # extract
+  tar -zxvf $tmp_file >>/dev/null 2>&1
+
+  # install
+  sudo mv $tar_gz_bin $user_bin
+
+  # clean
+  rm -rf $tmp_dir
 }
 
 core() {
