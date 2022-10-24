@@ -1,0 +1,37 @@
+#!/bin/bash
+
+VERSION=v0.0.417
+
+set -e
+
+help() {
+  echo "Usage:"
+  echo "  zmicro package install flyctl <args...>"
+  echo ""
+}
+
+install() {
+  curl -L https://fly.io/install.sh | sh -s ${VERSION#v}
+}
+
+core() {
+  if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    help
+    exit 0
+  fi
+
+  install
+  if [ $? -eq 0 ]; then
+    log::success "install flyctl success."
+    exit 0
+  else
+    log::error "install flyctl failed."
+    exit 1
+  fi
+}
+
+run() {
+  core $@
+}
+
+run $@
